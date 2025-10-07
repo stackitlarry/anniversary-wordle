@@ -68,26 +68,41 @@ function makeGrid(){
   }
 }
 function makeKeyboard(){
-  const rows = ["QWERTYUIOP","ASDFGHJKL","ZXCVBNM"];
-  rows.forEach((r,ri)=>{
-    for(const ch of r){
-      const k = document.createElement('div');
-      k.className = 'key small';
-      k.textContent = ch;
-      k.onclick = ()=>keyPress(ch);
-      keyboard.appendChild(k);
+  const layout = [
+    "QWERTYUIOP",
+    "ASDFGHJKL",
+    "ZXCVBNM"
+  ];
+
+  layout.forEach(row => {
+    const rowDiv = document.createElement("div");
+    rowDiv.className = "kb-row";
+    for (const ch of row) {
+      const key = document.createElement("div");
+      key.className = "key small";
+      key.textContent = ch;
+      key.onclick = () => keyPress(ch);
+      rowDiv.appendChild(key);
     }
-    if(ri<rows.length-1){
-      const br = document.createElement('div'); br.style.flexBasis='100%';
-      keyboard.appendChild(br);
-    }
+    keyboard.appendChild(rowDiv);
   });
-  // actions
-  const enter = document.createElement('div');
-  enter.className='key action'; enter.textContent='ENTER'; enter.onclick=()=>keyPress('ENTER');
-  const back = document.createElement('div');
-  back.className='key action'; back.textContent='BACK'; back.onclick=()=>keyPress('BACK');
-  keyboard.appendChild(enter); keyboard.appendChild(back);
+
+  // bottom action row
+  const actionRow = document.createElement("div");
+  actionRow.className = "kb-row";
+  const enter = document.createElement("div");
+  enter.className = "key action";
+  enter.textContent = "ENTER";
+  enter.onclick = () => keyPress("ENTER");
+
+  const back = document.createElement("div");
+  back.className = "key action";
+  back.textContent = "BACK";
+  back.onclick = () => keyPress("BACK");
+
+  actionRow.appendChild(enter);
+  actionRow.appendChild(back);
+  keyboard.appendChild(actionRow);
 }
 
 function setTile(row, col, ch){
