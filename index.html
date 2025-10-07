@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Where are we going? — Puzzle</title>
+<style>
+  :root{
+    --bg:#0f1720; --tile:#111827; --text:#e6eef6;
+    --absent:#3a3f46; --present:#b59f3b; --correct:#538d4e;
+    font-family: Inter, system-ui, Arial, sans-serif;
+  }
+  body{background:var(--bg); color:var(--text); display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; padding:24px;}
+  .wrap{max-width:420px; width:100%;}
+  h1{margin:0 0 12px 0; font-size:20px; text-align:center;}
+  .grid{display:grid; grid-template-rows: repeat(6, 1fr); gap:8px;}
+  .row{display:flex; gap:8px; justify-content:center;}
+  .tile{width:48px; height:64px; background:var(--tile); border-radius:6px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:24px; letter-spacing:2px; text-transform:uppercase; color:var(--text);}
+  .keyboard{margin-top:14px; display:flex; flex-wrap:wrap; gap:8px; justify-content:center;}
+  .key{padding:10px 12px; border-radius:6px; background:#111827; cursor:pointer; user-select:none; font-weight:600;}
+  .key.small{padding:10px 6px; min-width:32px; text-align:center;}
+  .key.action{min-width:66px;}
+  .hint{margin-top:12px; text-align:center; font-size:13px; color:#bcd0e6;}
+  .footer{margin-top:12px; text-align:center; font-size:13px; color:#94a3b8;}
+  .message{margin-top:10px; text-align:center;}
+</style>
+</head>
+<body>
+  <div class="wrap" role="application" aria-label="Guess the place">
+    <h1>Guess where we're going for dinner 🍽️</h1>
+    <div id="game" class="grid"></div>
+
+    <div class="keyboard" id="keyboard"></div>
+
+    <div class="hint" id="hint">Type letters or use the on-screen keyboard. 6 tries.</div>
+    <div class="message" id="message"></div>
+    <div class="footer">Made with ❤️ — customize the secret in the script.</div>
+  </div>
+
+<script>
+/* ---------- Customize these ---------- */
+const SECRET_WORD = "ALYSE"; // MUST be letters only, length 4-7 recommended
+const MAX_ROWS = 6;
+const REVEAL_MESSAGE = "Don’t leave this space or you’ll meet your doom,
+The next hint’s hiding in Alyse’s room.
+Somewhere cozy, close to bed.
+Search where sleepy thoughts are fed."; 
+/* ------------------------------------- */
+
+const word = SECRET_WORD.toUpperCase();
+const wordLen = word.length;
+const game = document.getElementById('game');
+const keyboard = document.getElementById('keyboard');
+const message = document.getElementById('message');
+
+let currentRow = 0;
+let currentGuess = "";
+
+function makeGrid(){
+  for(let r=0;r<MAX_ROWS;r++){
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.dataset.row = r;
+    for(let c=0;c<wordLen;c++){
+      const t = document.createElement('div');
+      t.className = 'tile';
+      t.dataset.col = c;
+      row.appendChild(t);
+    }
+    game.appendChild(row);
+  }
+}
+function makeKeyboard(){
+  const rows = ["QWERTYUIOP","ASDFGHJKL","ZXCVBNM"];
+  rows.forEach((r,ri)=>{
+    for(const ch of r){
+      const k = document.createElement('div');
+      k.className = 'key small';
+      k.textContent = ch;
+      k.onclick = ()=>keyPress(ch);
+      keyboard.appendChild(k);
+    }
+    if(ri<rows.length-1){
+      const br = document.createElement('div'); br.style.flexBasis='100%';
+      keyboard.appendChild(br);
+    }
+  });
+  // actions
+  const enter = document.createElement('div');
+  enter.className='key action'; enter.textContent='ENTER'; enter.onclick=()=>keyPress('ENTER');
+  const back = document.createElement('div');
+  back.className='key action'; back.textContent='BACK'; back.onclick=()=>keyPress('BACK');
+  keyboard.appendChild(enter); keyboard.appendChild(back);
+}
+
+function setTile(row, col, ch){
+  const rowEl = game.querySelector(`.row[data-row="${row}"]`);
+  if(!rowEl) return;
+  const tile = rowEl.children[col];
+  tile.textContent = ch || '';
+}
+
+function shakeRow(r){
+  const rowEl = game.querySelector(`.row[data-row="${r}"]`);
+  rowEl.animate([{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}],{duration:300});
+}
+
+function showMessage(text, timeout=2500){
+  message.textContent = text;
+  setTimeout(()=>{ if(message.textContent===text) message.textContent=''; }, timeout);
+}
+
+function keyPress(k){
+  if(k === 'ENTER'){
+    submitGuess();
+  } else if(k === 'BACK'){
+    if(currentGuess.length>0){
+      currentGuess = currentGuess.slice(0,-1);
+      setTile(currentRow, currentGuess.length, '');
+    }
+  } else if(/^[A-Z]$/.test(k)){
+    if(currentGuess.length < wordLen){
+      currentGuess += k;
+      setTile(currentRow, currentGuess.length-1, k);
+    }
+  }
+}
+
+function submitGuess(){
+  if(currentGuess.length !== wordLen){
+    shakeRow(currentRow);
+    showMessage("Not long enough");
+    return;
+  }
+  const guess = currentGuess;
+  // compute feedback
+  const result = Array(wordLen).fill('absent');
+  const secretArr = word.split('');
+  // first pass for correct
+  for(let i=0;i<wordLen;i++){
+    if(guess[i] === secretArr[i]){
+      result[i] = 'correct';
+      secretArr[i] = null;
+    }
+  }
+  // second pass for present
+  for(let i=0;i<wordLen;i++){
+    if(result[i] === 'correct') continue;
+    const idx = secretArr.indexOf(guess[i]);
+    if(idx !== -1){
+      result[i] = 'present';
+      secretArr[idx] = null;
+    }
+  }
+  // reveal tiles
+  const rowEl = game.querySelector(`.row[data-row="${currentRow}"]`);
+  for(let i=0;i<wordLen;i++){
+    const tile = rowEl.children[i];
+    tile.style.transition = 'transform 0.2s ease, background 0.2s ease';
+    tile.style.transform = 'rotateX(90deg)';
+    (function(tile, cls, ch){
+      setTimeout(()=>{
+        tile.style.transform='rotateX(0deg)';
+        if(cls==='correct') tile.style.background = 'var(--correct)';
+        else if(cls==='present') tile.style.background = 'var(--present)';
+        else tile.style.background = 'var(--absent)';
+        tile.textContent = ch;
+      }, 220 + i*160);
+    })(tile, result[i], tile.textContent);
+  }
+  // update keyboard coloring:
+  setTimeout(()=>updateKeyboard(guess,result), 220 + wordLen*160);
+
+  if(guess === word){
+    setTimeout(()=>win(), 220 + wordLen*160 + 300);
+    return;
+  }
+  currentRow++;
+  currentGuess = "";
+  if(currentRow >= MAX_ROWS){
+    setTimeout(()=>lose(), 400);
+  }
+}
+
+function updateKeyboard(guess, result){
+  for(let i=0;i<guess.length;i++){
+    const keyEl = Array.from(keyboard.children).find(k=>k.textContent === guess[i]);
+    if(!keyEl) continue;
+    if(result[i] === 'correct') keyEl.style.background = 'var(--correct)';
+    else if(result[i] === 'present' && keyEl.style.background !== 'var(--correct)') keyEl.style.background = 'var(--present)';
+    else if(result[i] === 'absent' && !['var(--present)','var(--correct)'].includes(keyEl.style.background)) keyEl.style.background = 'var(--absent)';
+  }
+}
+
+function win(){
+  message.innerHTML = `<strong>Correct!</strong><div style="margin-top:8px;">${REVEAL_MESSAGE}</div>`;
+  // optional confetti (simple)
+  confetti();
+}
+
+function lose(){
+  message.innerHTML = `<strong>Out of tries.</strong> The answer was <em>${word}</em>.`;
+}
+
+function confetti(){
+  for(let i=0;i<30;i++){
+    const d = document.createElement('div');
+    d.textContent = '🎉';
+    d.style.position='fixed';
+    d.style.left=(Math.random()*90)+'%';
+    d.style.top=(Math.random()*40)+'%';
+    d.style.fontSize=(12+Math.random()*24)+'px';
+    d.style.opacity='0.9';
+    document.body.appendChild(d);
+    setTimeout(()=>d.remove(), 3000 + Math.random()*2000);
+  }
+}
+
+// keyboard physical
+window.addEventListener('keydown', (e)=>{
+  const key = e.key.toUpperCase();
+  if(key === 'ENTER') keyPress('ENTER');
+  else if(key === 'BACKSPACE') keyPress('BACK');
+  else if(/^[A-Z]$/.test(key)) keyPress(key);
+});
+
+makeGrid();
+makeKeyboard();
+
+</script>
+</body>
+</html>
