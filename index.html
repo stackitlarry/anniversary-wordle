@@ -27,24 +27,21 @@
 </head>
 <body>
   <div class="wrap" role="application" aria-label="Guess the place">
-    <h1>Guess where we're going for dinner 🍽️</h1>
+    <h1>Solve the wordle for your next hint</h1>
     <div id="game" class="grid"></div>
 
     <div class="keyboard" id="keyboard"></div>
 
     <div class="hint" id="hint">Type letters or use the on-screen keyboard. 6 tries.</div>
     <div class="message" id="message"></div>
-    <div class="footer">Made with ❤️ — customize the secret in the script.</div>
+    <div class="footer">Made with ❤️</div>
   </div>
 
 <script>
 /* ---------- Customize these ---------- */
 const SECRET_WORD = "ALYSE"; // MUST be letters only, length 4-7 recommended
 const MAX_ROWS = 6;
-const REVEAL_MESSAGE = "Don’t leave this space or you’ll meet your doom,
-The next hint’s hiding in Alyse’s room.
-Somewhere cozy, close to bed.
-Search where sleepy thoughts are fed."; 
+const REVEAL_MESSAGE = "Don’t leave this space or you’ll meet your doom,the next hint is hiding in Alyse's room. Somewhere cozy and close to bed, search where sleepy thoughts are fed"; 
 /* ------------------------------------- */
 
 const word = SECRET_WORD.toUpperCase();
